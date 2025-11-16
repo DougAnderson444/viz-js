@@ -1,3 +1,6 @@
 node_modules/
 .parcel-cache/
 packages/viz/component/demo/target
+packages/viz/component/graphviz-14.0.2
+packages/viz/component/graphviz-14.0.2-wasi-build
+packages/viz/component/graphviz-14.0.2-wasi-install
