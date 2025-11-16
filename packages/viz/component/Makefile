@@ -10,13 +10,13 @@ GRAPHVIZ_TARBALL=graphviz-${GRAPHVIZ_VERSION}.tar.gz
 GRAPHVIZ_URL=https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/${GRAPHVIZ_VERSION}/${GRAPHVIZ_TARBALL}
 GRAPHVIZ_DIR=graphviz-${GRAPHVIZ_VERSION}
 GRAPHVIZ_BUILD_DIR=$(GRAPHVIZ_DIR)-wasi-build
-GRAPHVIZ_INSTALL_DIR=$(GRAPHVIZ_DIR)-wasi-install
+GRAPHVIZ_INSTALL_DIR=$(CURDIR)/$(GRAPHVIZ_DIR)-wasi-install
 
 # Compiler and linker for WASI
 CFLAGS := -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -mllvm -wasm-enable-sjlj
-LDFLAGS := -lwasi-emulated-signal -Wl,--whole-archive -lc++abi -Wl,--no-whole-archive -lwasi-emulated-process-clocks
+LDFLAGS := -lwasi-emulated-signal -Wl,--whole-archive -lc++ -lc++abi -Wl,--no-whole-archive -lwasi-emulated-process-clocks
 CC := $(WASI_SDK_PATH)/bin/clang --sysroot=$(WASI_SYSROOT) $(CFLAGS)
-CXX := $(WASI_SDK_PATH)/bin/clang++ --sysroot=$(WASI_SYSROOT) $(CFLAGS) -fwasm-exceptions
+CXX := $(WASI_SDK_PATH)/bin/clang++ --sysroot=$(WASI_SYSROOT) $(CFLAGS) -fno-exceptions
 AR := $(WASI_SDK_PATH)/bin/llvm-ar
 RANLIB := $(WASI_SDK_PATH)/bin/llvm-ranlib
 LD := $(WASI_SDK_PATH)/bin/wasm-ld
@@ -35,23 +35,12 @@ BINDINGS_H := $(COMPONENT_NAME).h
 BINDINGS_O := $(COMPONENT_NAME)_component_type.o
 CORE_WASM := $(COMPONENT_NAME).core.wasm
 COMPONENT_WASM := $(COMPONENT_NAME).wasm
-CORE_WASM_ADAPTED := $(COMPONENT_NAME).core.adapted.wasm
-
-WASM_TOOLS_DIR := $(shell mktemp -d -t wasmtime-XXXXXX)
-WASI_ADAPTER_PATH := $(WASM_TOOLS_DIR)/wasmtime/target/wasm32-unknown-unknown/release/wasi_snapshot_preview1.wasm
 
 # --- Targets ---
 
-.PHONY: all clean graphviz-download graphviz-configure graphviz-build graphviz-install wit-bindings component-core component-wasm wasi-adapter
+.PHONY: all clean graphviz-download graphviz-configure graphviz-build graphviz-install wit-bindings component-core component-wasm
 
 all: $(COMPONENT_WASM)
-
-# --- WASI Adapter Build Steps ---
-wasi-adapter:
-	@echo "Cloning wasmtime repository into $(WASM_TOOLS_DIR)..."
-	git clone https://github.com/bytecodealliance/wasmtime.git $(WASM_TOOLS_DIR)/wasmtime
-	@echo "Building wasi_snapshot_preview1.wasm adapter..."
-	cargo build -p wasi-preview1-component-adapter --target wasm32-unknown-unknown --release --manifest-path $(WASM_TOOLS_DIR)/wasmtime/Cargo.toml
 
 # --- Graphviz Build Steps ---
 
@@ -91,12 +80,20 @@ graphviz-configure: $(GRAPHVIZ_DIR) download-config-scripts
 	sed -i 's/if ((us->type == US_EPSF) && us->data)/if (0 \&\& (us->type == US_EPSF) \&\& us->data)/g' $(GRAPHVIZ_DIR)/plugin/core/gvloadimage_core.c
 	sed -i 's/flockfile(file);/\/\* flockfile disabled for WASI \*\//g' $(GRAPHVIZ_DIR)/lib/util/lockfile.h
 	sed -i 's/funlockfile(file);/\/\* funlockfile disabled for WASI \*\//g' $(GRAPHVIZ_DIR)/lib/util/lockfile.h
+	# Patch solve_VPSC.cpp to replace C++ exceptions with fprintf and exit
+	sed -i 's/throw std::runtime_error("Unsatisfied constraint");/fprintf(stderr, "Error: Unsatisfied constraint\\n"); exit(EXIT_FAILURE);/g' $(GRAPHVIZ_DIR)/lib/vpsc/solve_VPSC.cpp
+	sed -i 's/throw std::runtime_error("Cycle Error!");/fprintf(stderr, "Error: Cycle Error!\\n"); exit(EXIT_FAILURE);/g' $(GRAPHVIZ_DIR)/lib/vpsc/solve_VPSC.cpp
+	sed -i 's/throw std::runtime_error(s.str());/fprintf(stderr, "Error: %s\\n", s.str().c_str()); exit(EXIT_FAILURE);/g' $(GRAPHVIZ_DIR)/lib/vpsc/solve_VPSC.cpp
+	# Add cstdio and cstdlib includes
+	sed -i '1i#include <cstdio>\n#include <cstdlib>' $(GRAPHVIZ_DIR)/lib/vpsc/solve_VPSC.cpp
+	# Remove try-catch block from csolve_VPSC.cpp - replace entire function body
+	sed -i '/void satisfyVPSC(VPSC\* vpsc) {/,/^}/c\void satisfyVPSC(VPSC* vpsc) {\n    vpsc->satisfy();\n}' $(GRAPHVIZ_DIR)/lib/vpsc/csolve_VPSC.cpp
 	mkdir -p $(GRAPHVIZ_BUILD_DIR)
 	cd $(GRAPHVIZ_BUILD_DIR) && \
-	CC="$(CC)" CXX="$(CXX)" AR="$(AR)" RANLIB="$(RANLIB)" LDFLAGS="$(LDFLAGS)" \
+	CC="$(CC)" CXX="$(CXX)" AR="$(AR)" RANLIB="$(RANLIB)" \
 	../$(GRAPHVIZ_DIR)/configure \
 		--host=wasm32-wasi \
-		--prefix=$(abspath $(GRAPHVIZ_INSTALL_DIR)) \
+		--prefix=$(GRAPHVIZ_INSTALL_DIR) \
 		--disable-shared \
 		--enable-static \
 		--disable-dependency-tracking \
@@ -164,18 +161,18 @@ component-core: wit-bindings $(COMPONENT_C_SRC) graphviz-install
 		graphviz-14.0.2-wasi-install/lib/libcgraph.a \
 		graphviz-14.0.2-wasi-install/lib/libcdt.a \
 		graphviz-14.0.2-wasi-install/lib/libpathplan.a \
-		graphviz-14.0.2-wasi-install/lib/libxdot.a \
-		-lm
-
-component-core-embedded: component-core wasi-adapter
+		        graphviz-14.0.2-wasi-install/lib/libxdot.a \
+				graphviz-14.0.2-wasi-install/lib/graphviz/libgvplugin_core.a \
+				graphviz-14.0.2-wasi-install/lib/graphviz/libgvplugin_dot_layout.a \
+				graphviz-14.0.2-wasi-install/lib/graphviz/libgvplugin_neato_layout.a \
+				-lm
+component-core-embedded: component-core
 	@echo "Embedding WIT metadata into core WASM..."
 	wasm-tools component embed $(WIT_FILE) $(CORE_WASM) -o $(CORE_WASM) --world $(COMPONENT_NAME)
-	@echo "Adapting core WASM with wasi_snapshot_preview1.wasm..."
-	wasm-tools component new $(CORE_WASM) --adapt $(WASI_ADAPTER_PATH) -o $(CORE_WASM_ADAPTED)
 
 $(COMPONENT_WASM): component-core-embedded
 	@echo "Creating WASM component..."
-	mv $(CORE_WASM_ADAPTED) $@
+	wasm-tools component new $(CORE_WASM) -o $@
 
 # --- Clean ---
 
@@ -183,5 +180,4 @@ clean:
 	@echo "Cleaning build artifacts..."
 	rm -rf $(GRAPHVIZ_TARBALL) $(GRAPHVIZ_DIR) $(GRAPHVIZ_BUILD_DIR) $(GRAPHVIZ_INSTALL_DIR)
 	rm -f src/$(BINDINGS_C) src/$(BINDINGS_H) src/$(BINDINGS_O)
-	rm -f $(CORE_WASM) $(COMPONENT_WASM) $(CORE_WASM_ADAPTED)
-	rm -rf $(WASM_TOOLS_DIR)
+	rm -f $(CORE_WASM) $(COMPONENT_WASM)
