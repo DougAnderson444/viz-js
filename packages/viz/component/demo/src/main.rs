@@ -136,7 +136,7 @@ fn main() -> Result<()> {
     match iface.call_render(&mut store, ctx, graph, "svg") {
         Ok(Ok(svg)) => {
             println!("Rendered SVG ({} bytes)", svg.len());
-            println!("{}", &svg.as_str()[..std::cmp::min(1024, svg.len())]);
+            println!("{}", &svg.as_str()[..std::cmp::min(2048, svg.len())]);
         }
         Ok(Err(err_str)) => println!("Render failed: {}", err_str),
         Err(e) => println!("Render error: {:?}", e),
