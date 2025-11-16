@@ -1,0 +1,73 @@
+package viz:component;
+
+interface viz-api {
+    resource graph {}
+    resource node {}
+    resource edge {}
+    resource context {}
+
+    variant object {
+        graph(graph),
+        node(node),
+        edge(edge)
+    }
+
+    /// Set whether to invert the Y coordinate.
+    set-y-invert: func(value: s32);
+
+    /// Set whether to reduce graph features.
+    set-reduce: func(value: s32);
+
+    /// Get the Graphviz version.
+    get-graphviz-version: func() -> string;
+
+    /// Get a list of available plugins for a given kind.
+    /// e.g., "layout", "render", "textlayout"
+    get-plugin-list: func(kind: string) -> list<string>;
+
+    /// Create a new graph.
+    create-graph: func(name: string, directed: bool, strict: bool) -> own<graph>;
+
+    /// Read a graph from a DOT string.
+    /// Returns a graph on success, or an error string.
+    read-one-graph: func(dot-string: string) -> result<own<graph>, string>;
+
+    /// Add a node to a graph.
+    add-node: func(g: borrow<graph>, name: string) -> own<node>;
+
+    /// Add an edge between two nodes.
+    add-edge: func(g: borrow<graph>, u-name: string, v-name: string) -> own<edge>;
+
+    /// Add a subgraph to a graph.
+    add-subgraph: func(g: borrow<graph>, name: string) -> own<graph>;
+
+    /// Set a default graph attribute.
+    set-default-graph-attribute: func(g: borrow<graph>, name: string, value: string);
+
+    /// Set a default node attribute.
+    set-default-node-attribute: func(g: borrow<graph>, name: string, value: string);
+
+    /// Set a default edge attribute.
+    set-default-edge-attribute: func(g: borrow<graph>, name: string, value: string);
+
+    /// Set an attribute on a graph object (graph, node, or edge).
+    set-attribute: func(obj: object, name: string, value: string);
+
+    /// Create a new Graphviz context.
+    create-context: func() -> own<context>;
+
+    /// Perform layout on a graph.
+    /// Returns an error string on failure.
+    layout: func(ctx: borrow<context>, g: borrow<graph>, engine: string) -> result<_, string>;
+
+    /// Free layout data.
+    free-layout: func(ctx: borrow<context>, g: borrow<graph>);
+
+    /// Render a graph to a string.
+    /// Returns the rendered data (e.g., SVG) or an error string.
+    render: func(ctx: borrow<context>, g: borrow<graph>, format: string) -> result<string, string>;
+}
+
+world viz {
+    export viz-api;
+}
