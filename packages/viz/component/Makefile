@@ -38,8 +38,8 @@ COMPONENT_WASM := $(COMPONENT_NAME).wasm
 
 # WASI preview1 -> preview2 adapter from Wasmtime release assets
 WASI_ADAPTER_NAME := wasi_snapshot_preview1.reactor.wasm
-# Override with: make WASMTIME_VERSION=v31.0.0
-WASMTIME_VERSION ?= v30.0.2
+# Override with: make WASMTIME_VERSION=v37.0.0
+WASMTIME_VERSION ?= v37.0.0
 WASI_ADAPTER_URL := https://github.com/bytecodealliance/wasmtime/releases/download/$(WASMTIME_VERSION)/$(WASI_ADAPTER_NAME)
 
 # --- Debug (optional) ---
