@@ -66,6 +66,10 @@ interface viz-api {
     /// Render a graph to a string.
     /// Returns the rendered data (e.g., SVG) or an error string.
     render: func(ctx: borrow<context>, g: borrow<graph>, format: string) -> result<string, string>;
+
+    /// Render a DOT string directly to an output format.
+    /// This is a convenience function that combines read-one-graph, layout, and render.
+    render-dot: func(ctx: borrow<context>, dot-string: string, engine: string, format: string) -> result<string, string>;
 }
 
 world viz {

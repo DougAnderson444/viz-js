@@ -105,6 +105,7 @@ exports_viz_component_viz_api_own_context_t exports_viz_component_viz_api_create
 bool exports_viz_component_viz_api_layout(exports_viz_component_viz_api_borrow_context_t ctx, exports_viz_component_viz_api_borrow_graph_t g, viz_string_t *engine, viz_string_t *err);
 void exports_viz_component_viz_api_free_layout(exports_viz_component_viz_api_borrow_context_t ctx, exports_viz_component_viz_api_borrow_graph_t g);
 bool exports_viz_component_viz_api_render(exports_viz_component_viz_api_borrow_context_t ctx, exports_viz_component_viz_api_borrow_graph_t g, viz_string_t *format, viz_string_t *ret, viz_string_t *err);
+bool exports_viz_component_viz_api_render_dot(exports_viz_component_viz_api_borrow_context_t ctx, viz_string_t *dot_string, viz_string_t *engine, viz_string_t *format, viz_string_t *ret, viz_string_t *err);
 
 // Helper Functions
 

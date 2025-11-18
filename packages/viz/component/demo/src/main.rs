@@ -1,5 +1,3 @@
-// NOTE:
-//
 // This example demonstrates how to call a component that exports the `viz-api`
 // world (examples/component/viz.wit).
 //
@@ -130,6 +128,23 @@ fn main() -> Result<()> {
         }
         Ok(Err(err_str)) => println!("Render failed: {}", err_str),
         Err(e) => println!("Render error: {:?}", e),
+    }
+
+    // Now render a basic A -> B graph using the new render_dot function.
+    let simple_digraph = r#"
+        digraph G {
+            Aaa -> Bbb;
+        }
+    "#;
+
+    println!("\nRendering simple graph with render_dot:");
+    match iface.call_render_dot(&mut store, ctx, simple_digraph, "dot", "svg") {
+        Ok(Ok(svg)) => {
+            println!("Rendered simple SVG with render_dot ({} bytes):", svg.len());
+            println!("{}", &svg.as_str()[..std::cmp::min(2048, svg.len())]);
+        }
+        Ok(Err(err_str)) => println!("Render simple graph with render_dot failed: {}", err_str),
+        Err(e) => println!("Render simple graph with render_dot error: {:?}", e),
     }
 
     // 9) Free layout resources

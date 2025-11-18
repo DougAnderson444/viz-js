@@ -88,6 +88,24 @@ void __wasm_export_exports_viz_component_viz_api_render_post_return(uint8_t * ar
   }
 }
 
+__attribute__((__weak__, __export_name__("cabi_post_viz:component/viz-api#render-dot")))
+void __wasm_export_exports_viz_component_viz_api_render_dot_post_return(uint8_t * arg0) {
+  switch ((int32_t) (int32_t) *((uint8_t*) (arg0 + 0))) {
+    case 0: {
+      if ((*((size_t*) (arg0 + 8))) > 0) {
+        free(*((uint8_t **) (arg0 + 4)));
+      }
+      break;
+    }
+    case 1: {
+      if ((*((size_t*) (arg0 + 8))) > 0) {
+        free(*((uint8_t **) (arg0 + 4)));
+      }
+      break;
+    }
+  }
+}
+
 // Canonical ABI intrinsics
 
 __attribute__((__weak__, __export_name__("cabi_realloc")))
@@ -455,6 +473,34 @@ uint8_t * __wasm_export_exports_viz_component_viz_api_render(int32_t arg, int32_
     const viz_string_t *payload4 = &(ret).val.err;*((int8_t*)(ptr + 0)) = 1;
     *((size_t*)(ptr + 8)) = (*payload4).len;
     *((uint8_t **)(ptr + 4)) = (uint8_t *) (*payload4).ptr;
+  } else {
+    const viz_string_t *payload = &(ret).val.ok;*((int8_t*)(ptr + 0)) = 0;
+    *((size_t*)(ptr + 8)) = (*payload).len;
+    *((uint8_t **)(ptr + 4)) = (uint8_t *) (*payload).ptr;
+  }
+  return ptr;
+}
+
+__attribute__((__export_name__("viz:component/viz-api#render-dot")))
+uint8_t * __wasm_export_exports_viz_component_viz_api_render_dot(int32_t arg, uint8_t * arg0, size_t arg1, uint8_t * arg2, size_t arg3, uint8_t * arg4, size_t arg5) {
+  viz_string_t arg6 = (viz_string_t) { (uint8_t*)(arg0), (arg1) };
+  viz_string_t arg7 = (viz_string_t) { (uint8_t*)(arg2), (arg3) };
+  viz_string_t arg8 = (viz_string_t) { (uint8_t*)(arg4), (arg5) };
+  exports_viz_component_viz_api_result_string_string_t ret;
+  viz_string_t ok;
+  viz_string_t err;
+  ret.is_err = !exports_viz_component_viz_api_render_dot(((exports_viz_component_viz_api_context_t*) arg), &arg6, &arg7, &arg8, &ok, &err);
+  if (ret.is_err) {
+    ret.val.err = err;
+  }
+  if (!ret.is_err) {
+    ret.val.ok = ok;
+  }
+  uint8_t *ptr = (uint8_t *) &RET_AREA;
+  if ((ret).is_err) {
+    const viz_string_t *payload9 = &(ret).val.err;*((int8_t*)(ptr + 0)) = 1;
+    *((size_t*)(ptr + 8)) = (*payload9).len;
+    *((uint8_t **)(ptr + 4)) = (uint8_t *) (*payload9).ptr;
   } else {
     const viz_string_t *payload = &(ret).val.ok;*((int8_t*)(ptr + 0)) = 0;
     *((size_t*)(ptr + 8)) = (*payload).len;

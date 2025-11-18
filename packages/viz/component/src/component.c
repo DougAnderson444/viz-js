@@ -340,3 +340,63 @@ bool exports_viz_component_viz_api_render(exports_viz_component_viz_api_borrow_c
 
     return true; // Success
 }
+
+bool exports_viz_component_viz_api_render_dot(
+    exports_viz_component_viz_api_borrow_context_t ctx,
+    viz_string_t *dot_string,
+    viz_string_t *engine,
+    viz_string_t *format,
+    viz_string_t *ret_ok,
+    viz_string_t *ret_err
+) {
+    viz_reset_errors();
+    GVC_t *c_ctx = (GVC_t*)ctx;
+    char* c_dot_string = wit_string_to_c_string(dot_string);
+    char* c_engine = wit_string_to_c_string(engine);
+    char* c_format = wit_string_to_c_string(format);
+
+    // 1. Read graph from string
+    agattr(NULL, AGNODE, "label", "\\N"); // Workaround
+    Agraph_t *g = agmemread(c_dot_string);
+    free(c_dot_string);
+
+    if (!g) {
+        c_string_to_wit_string(g_error_len > 0 ? g_error_messages : "Failed to read graph from DOT string.", ret_err);
+        free(c_engine);
+        free(c_format);
+        return false;
+    }
+
+    // 2. Layout
+    int layout_error = gvLayout(c_ctx, g, c_engine);
+    free(c_engine);
+    if (layout_error != 0) {
+        c_string_to_wit_string(g_error_len > 0 ? g_error_messages : "Layout failed.", ret_err);
+        gvFreeLayout(c_ctx, g);
+        agclose(g);
+        free(c_format);
+        return false;
+    }
+
+    // 3. Render
+    char *data = NULL;
+    size_t length = 0;
+    int render_error = gvRenderData(c_ctx, g, c_format, &data, &length);
+    free(c_format);
+
+    if (render_error != 0 || !data) {
+        c_string_to_wit_string(g_error_len > 0 ? g_error_messages : "Render failed.", ret_err);
+        if (data) gvFreeRenderData(data);
+        gvFreeLayout(c_ctx, g);
+        agclose(g);
+        return false;
+    }
+
+    // 4. Success and cleanup
+    c_string_to_wit_string(data, ret_ok);
+    gvFreeRenderData(data);
+    gvFreeLayout(c_ctx, g);
+    agclose(g);
+
+    return true;
+}
