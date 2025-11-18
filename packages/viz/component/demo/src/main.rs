@@ -1,3 +1,16 @@
+// NOTE:
+//
+// This example demonstrates how to call a component that exports the `viz-api`
+// world (examples/component/viz.wit).
+//
+// The bindgen! invocation generates the Rust adapter types from the wit file.
+// Put the viz.wit next to this file at ./viz.wit (or adjust
+// the path below) so the macro can read it at build time.
+//
+// The generated API names below (e.g. Viz, call_get_graphviz_version) follow
+// the same convention as the other example in this repo. The exact generated
+// names depend on the bindgen implementation and the WIT identifiers; if your
+// generated API names differ, adjust the calls accordingly.
 use anyhow::Context;
 use std::{env, fs};
 
@@ -8,29 +21,6 @@ use wasmtime::{
 use wasmtime_wasi::{self, ResourceTable, WasiCtx, WasiCtxView, WasiView};
 
 use crate::exports::viz::component::viz_api::Object;
-
-//
-// NOTE:
-//
-// This example demonstrates how to call a component that exports the `viz-api`
-// world you pasted (examples/component/viz.wit). It follows the same shape as
-// the existing examples/component/main.rs in this repo but replaces the
-// convert example with a `viz` example.
-//
-// The bindgen! invocation generates the Rust adapter types from the wit file.
-// Put your viz.wit next to this file at ./examples/component/viz.wit (or adjust
-// the path below) so the macro can read it at build time.
-//
-// The guest component (the C-built wasm) must be converted to a component
-// (using the helper below) if it isn't already a component. For testing you
-// can reuse the convert_to_component helper which wraps a module in a
-// component. In production you'd normally build a component directly.
-//
-// The generated API names below (e.g. Viz, call_get_graphviz_version) follow
-// the same convention as the other example in this repo. The exact generated
-// names depend on the bindgen implementation and the WIT identifiers; if your
-// generated API names differ, adjust the calls accordingly.
-//
 
 // Generate bindings of the guest component using the viz.wit file.
 bindgen!("viz" in "../wit/world.wit");
